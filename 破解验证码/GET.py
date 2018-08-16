@@ -1,6 +1,7 @@
 import collections
 
 import numpy as np
+import tensorflow as tf
 
 import requests
 from io import BytesIO
@@ -51,6 +52,7 @@ class GET(object):
             plt.imshow(np.array(dm.getdata()).reshape(crop_h, crop_w) / 255)
         plt.subplot(2, 3, self.code_size + 1)
         plt.imshow(np.array(im.getdata()).reshape(h, w) / 255)
+        plt.ion()
         plt.show()
 
     def spit(self):
@@ -62,8 +64,8 @@ class GET(object):
             box = (crop_w * j, 00, (1 + j) * crop_w, crop_h)
             dm = im.crop(box)
             dm = self.iamge2imbw(dm)
-            dm.save("data/" + str(j) + "_" + self.codeUUID + ".png")
-            self.dms.append(np.array(dm.getdata()).reshape(crop_h, crop_w) / 255)
+            dm.save("get/" + str(j) + "_" + self.codeUUID + ".png")
+            self.dms.append(np.array(dm.getdata())/ 255)
         self.dms = np.array(self.dms)
 
     def iamge2imbw(self, img, inde=1):
@@ -101,10 +103,6 @@ class GET(object):
 
         return img
 
-
-
-
-
     def verify_code(self):
         pass
 
@@ -112,3 +110,9 @@ class GET(object):
 if __name__ == '__main__':
     x = GET()
     x.plot()
+
+    print(x.dms)
+    saver = tf.train.Saver()
+    with tf.Session() as sess:
+        # 提取变量
+        saver.restore(sess, "logs/save_net.ckpt")
