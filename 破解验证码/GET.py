@@ -22,6 +22,7 @@ class GET(object):
         self.code_size = code_size
         self.getImage()
         self.dms = []
+        self.ims = []
 
         # self.iamge2imbw()
 
@@ -64,8 +65,8 @@ class GET(object):
             box = (crop_w * j, 00, (1 + j) * crop_w, crop_h)
             dm = im.crop(box)
             dm = self.iamge2imbw(dm)
-            dm.save("get/" + str(j) + "_" + self.codeUUID + ".png")
-            self.dms.append(np.array(dm.getdata())/ 255)
+            self.dms.append(np.array(dm.getdata()) / 255)
+            self.ims.append(dm)
         self.dms = np.array(self.dms)
 
     def iamge2imbw(self, img, inde=1):
