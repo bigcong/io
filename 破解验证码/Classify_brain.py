@@ -3,77 +3,102 @@ import os
 
 import tensorflow as tf
 from PIL import Image
+from sklearn import preprocessing
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
+import matplotlib.pyplot as plt
 
-x_size = 600
-y_size = 3
-
-input_x = tf.placeholder(tf.float32, [None, x_size])
-input_y = tf.placeholder(tf.float32, [None, y_size])
+from 破解验证码.GET import GET
 
 
-def add_layer(inputs, in_size, out_size, activation_function=None):
-    # 定一个矩阵in_size*out_size
-    Weight = tf.Variable(tf.random_uniform([in_size, out_size]))
-    # 定一个矩阵1*out_size 都是0.1 的矩阵
-    Biase = tf.Variable(tf.zeros([1, out_size]) + 0.1)
+class brain(object):
+    # input_image_shape  图片的形状比如：长*宽*高（通道数)，get_image_url 下载图片的路径
+    def __init__(self, train_xx, train_yy):
+        _, self.input_size = train_xx.shape
+        _, self.out_size = train_yy.shape
+        self.build_net()
+        self.saver = tf.train.Saver()
+        self.save_path = "logs/" + str(self.out_size) + ".ckpt"
+        self.randow_pools = np.arange(97, 97 + 26)
 
-    Wx = tf.matmul(inputs, Weight) + Biase
-    Wx = tf.nn.dropout(Wx, 0.5)
+    def build_net(self):
+        self.input_x = tf.placeholder(tf.float32, [None, self.input_size])
+        self.input_y = tf.placeholder(tf.float32, [None, self.out_size])
 
-    if activation_function is None:
-        # 线性方程
-        output = Wx
-    else:
-        output = activation_function(Wx)
-    tf.summary.histogram('/outputs', output)
-    return output
+        w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
+        e1 = tf.layers.dense(self.input_x, 200, tf.nn.tanh, kernel_initializer=w_initializer,
+                             bias_initializer=b_initializer, name='e1')
 
-l1 = add_layer(input_x, x_size, 100, activation_function=tf.nn.tanh)
+        drop_out_e1 = tf.nn.dropout(e1, 0.5)
 
-output_y = add_layer(l1, 100, y_size, activation_function=tf.nn.softmax)
+        self.output_y = tf.layers.dense(drop_out_e1, self.out_size, tf.nn.softmax, kernel_initializer=w_initializer,
+                                        bias_initializer=b_initializer, name='e2')
 
-cross_entroy = tf.reduce_mean(-tf.reduce_sum(input_y * tf.log(output_y), reduction_indices=[1]))
+        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.output_y, labels=self.input_y))
+        self.train_op = tf.train.GradientDescentOptimizer(0.5).minimize(cost)
+        init = tf.global_variables_initializer()
+        self.sess = tf.Session()
+        self.sess.run(init)
 
-train_setp = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entroy)
-sess = tf.Session()
-sess.run(tf.global_variables_initializer())
+    def compute_accuracy(self, v_xs, v_ys):
+        global output_y
+        y_pre = self.sess.run(self.output_y, feed_dict={self.input_x: v_xs})
+        correct_prediction = tf.equal(tf.argmax(y_pre, 1), tf.argmax(v_ys, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        result = self.sess.run(accuracy, feed_dict={self.input_x: v_xs, self.input_y: v_ys})
+        return result
 
+    def train(self, train_xx, train_yy):
+        try:
 
-def get_train_data():
-    xx = []
-    yy = []
-    path = 'data/'
-    lists = os.listdir(path)  # 列出目录的下所有文件和文件夹保存到lists
-    for i in lists:
-        im = Image.open(path + i)
-        im = im.convert("L")  # 转成灰色模式
-        data = im.getdata()
-        data = np.array(data) / 225  # 转换成矩阵
+            self.saver.restore(self.sess, self.save_path)
+            num = 10
+        except:
+            num = 100
+            print("发生错误")
+        for i in range(num):
+            X_train, X_test, y_train, y_test = train_test_split(train_xx, train_yy, test_size=.2)
 
-        yy.append(int(i.split("_")[0]))
-        xx.append(np.array(data))
-    yy = LabelBinarizer().fit_transform(yy)
-    return np.array(xx), yy
+            self.sess.run(self.train_op, feed_dict={self.input_x: X_train, self.input_y: y_train})
+            print(self.compute_accuracy(X_test, y_test))
+        self.saver.save(self.sess, self.save_path)
 
+    def test(self, lb):
+        get = GET()
+        get.spit()
+        try:
 
-def compute_accuracy(v_xs, v_ys):
-    global output_y
-    y_pre = sess.run(output_y, feed_dict={input_x: v_xs})
-    correct_prediction = tf.equal(tf.argmax(y_pre, 1), tf.argmax(v_ys, 1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    result = sess.run(accuracy, feed_dict={input_x: v_xs, input_y: v_ys})
-    return result
+            self.saver.restore(self.sess, self.save_path)
+        except:
+            print("发生错误")
+        p = self.sess.run(self.output_y, feed_dict={self.input_x: get.dms})
+        p_max = np.max(p, axis=1)
+        print(p_max)
+        pp = lb.inverse_transform(p)
+        print(pp)
+        for i, max in enumerate(p_max):
+            if p_max[i] < 0.6:
+                pp[i] = chr(np.random.choice(self.randow_pools))
 
+        varcode = ''.join(pp)
+        print(varcode)
+        print(get.codeUUID)
+        if get.viefiy(get.codeUUID, varcode):
+            for index, (test_x, ppp, im) in enumerate(list(zip(get.dms, pp, get.ims))[0:10]):
+                plt.subplot(2, 5, index + 1)
+                plt.imshow(test_x.reshape(30, 20))
+                im.save("data/" + str(ppp) + "_" + get.codeUUID + ".png")
+                im.close()
 
+                plt.title(ppp)
+        else:
+            for index, (test_x, ppp, im) in enumerate(list(zip(get.dms, pp, get.ims))[0:10]):
+                plt.subplot(2, 5, index + 1)
+                plt.imshow(test_x.reshape(30, 20))
+                #im.save("wrong/" + str(ppp) + "_" + get.codeUUID + ".png")
+                im.close()
 
-
-
-if __name__ == '__main__':
-    xx, yy = get_train_data()
-    print(xx.shape)
-    print(yy.shape)
-
+                plt.title(ppp)
+        # plt.show()
