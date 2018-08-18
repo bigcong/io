@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt;
 class GET(object):
     # input_image_shape  图片的形状比如：长*宽*高（通道数)，get_image_url 下载图片的路径
     def __init__(self,
-                 get_image_url='http://192.168.0.138:20000/safepay/member/getCode',
+                 get_image_url='http://59.110.157.9/polarisex/security/getCode',
                  verify_url='',
                  code_size=5
                  ):
@@ -106,7 +106,8 @@ class GET(object):
 
     def viefiy(self, codeId, varcode):
 
-        url = "http://192.168.0.138:20000/safepay/member/loginSecond?phone=18613868034&areaCode=86&password=76B445233EEE38823227127AB79F10E0&vercode=" + varcode + "&codeid=" + codeId + "&uid=&token="
+        url = "http://59.110.157.9/polarisex/user/loginGAFirst?email=18613868034&pwd=8123c3fc72f458ba6633c172d9c68ea2&vercode=" + varcode + "&source=1&codeid=" + codeId + "&local=zh_TW"
+
         print(url)
         headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36'}
@@ -128,3 +129,4 @@ if __name__ == '__main__':
     with tf.Session() as sess:
         # 提取变量
         saver.restore(sess, "logs/save_net.ckpt")
+

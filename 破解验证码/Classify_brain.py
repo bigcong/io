@@ -20,7 +20,7 @@ class brain(object):
         self.build_net()
         self.saver = tf.train.Saver()
         self.save_path = "logs/" + str(self.out_size) + ".ckpt"
-        self.randow_pools = np.arange(97, 97 + 26)
+        self.randow_pools = np.arange(1, 9)
 
     def build_net(self):
         self.input_x = tf.placeholder(tf.float32, [None, self.input_size])
@@ -28,13 +28,13 @@ class brain(object):
 
         w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
-        e1 = tf.layers.dense(self.input_x, 200, tf.nn.tanh, kernel_initializer=w_initializer,
+        e1 = tf.layers.dense(self.input_x, 300, tf.nn.tanh, kernel_initializer=w_initializer,
                              bias_initializer=b_initializer, name='e1')
 
         drop_out_e1 = tf.nn.dropout(e1, 0.5)
 
         self.output_y = tf.layers.dense(drop_out_e1, self.out_size, tf.nn.softmax, kernel_initializer=w_initializer,
-                                        bias_initializer=b_initializer, name='e2')
+                                        bias_initializer=b_initializer, name='e3')
 
         cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=self.output_y, labels=self.input_y))
         self.train_op = tf.train.GradientDescentOptimizer(0.5).minimize(cost)
@@ -54,7 +54,7 @@ class brain(object):
         try:
 
             self.saver.restore(self.sess, self.save_path)
-            num = 10
+            num = 1
         except:
             num = 100
             print("发生错误")
@@ -79,26 +79,25 @@ class brain(object):
         pp = lb.inverse_transform(p)
         print(pp)
         for i, max in enumerate(p_max):
-            if p_max[i] < 0.6:
-                pp[i] = chr(np.random.choice(self.randow_pools))
+            if p_max[i] < 0.9:
+                pp[i] = np.random.choice(self.randow_pools)
 
         varcode = ''.join(pp)
         print(varcode)
         print(get.codeUUID)
+        plt.figure()
         if get.viefiy(get.codeUUID, varcode):
             for index, (test_x, ppp, im) in enumerate(list(zip(get.dms, pp, get.ims))[0:10]):
-                plt.subplot(2, 5, index + 1)
-                plt.imshow(test_x.reshape(30, 20))
-                im.save("data/" + str(ppp) + "_" + get.codeUUID + ".png")
-                im.close()
 
-                plt.title(ppp)
+                im.save("data/" + str(ppp) + "_" + get.codeUUID + ".png")
+
         else:
             for index, (test_x, ppp, im) in enumerate(list(zip(get.dms, pp, get.ims))[0:10]):
                 plt.subplot(2, 5, index + 1)
                 plt.imshow(test_x.reshape(30, 20))
-                #im.save("wrong/" + str(ppp) + "_" + get.codeUUID + ".png")
+                im.save("wrong/" + str(ppp) + "_" + get.codeUUID + ".png")
                 im.close()
 
                 plt.title(ppp)
-        # plt.show()
+            plt.ion()
+            plt.show()

@@ -6,6 +6,7 @@ from PIL import Image
 
 from sklearn import datasets
 import tensorflow as tf
+from sklearn.cross_validation import StratifiedKFold
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
 
@@ -55,11 +56,10 @@ if __name__ == '__main__':
     yy = lb.fit_transform(yy)
     b = brain(xx, yy)
 
-    for i in range(100000):
+    for i in range(10):
+
         try:
-            b.train(xx,yy)
+            b.train(xx, yy)
             b.test(lb)
         except:
             print("异常")
-
-
