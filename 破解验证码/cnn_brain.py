@@ -43,16 +43,10 @@ class cnn_brain(object):
         p_conv1 = self.max_pool_2x2(h_conv1)  # (?, 15, 10, 32)  #  图片长和宽减半
         # --------第二层卷积---------
 
-        W_conv2 = self.weight_varibale([5, 5, 32, 128])  # 5*5*32   32是图片的高度 5*5 是图片的长和宽，128 是输出高度
-        B_conv2 = self.bias_varibale([128])
-        h_conv2 = tf.nn.relu(self.conv2d(p_conv1, W_conv2) + B_conv2)
-        p_conv2 = self.max_pool_2x2(h_conv2)  # (?, 8, 5, 128)
-
         # dropout  将输出结果变成 (?, 1024)
-        p_conv2_shape_2 = (round(round(self.chang /2) / 2)) * (round(round(self.kuan /2) / 2)) * 128
-        print(p_conv2_shape_2)
+        p_conv2_shape_2 = round(self.chang / 2) * round(self.kuan / 2) * 32
 
-        p_flat = tf.reshape(p_conv2, [-1, p_conv2_shape_2])  # (?, 5120)
+        p_flat = tf.reshape(p_conv1, [-1, p_conv2_shape_2])  # (?, 5120)
         w_flat = self.weight_varibale([p_conv2_shape_2, 1024])
         b_flat = self.bias_varibale([1024])
         h_flat = tf.nn.relu(tf.matmul(p_flat, w_flat) + b_flat)  # (?, 1024)
@@ -63,9 +57,12 @@ class cnn_brain(object):
 
         self.output_y = tf.nn.softmax(tf.matmul(drop_flat, w) + b)
 
-        cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.input_y * tf.log(self.output_y),
+
+
+
+        self.cross_entropy = tf.reduce_mean(-tf.reduce_sum(self.input_y * tf.log(self.output_y),
                                                       reduction_indices=[1]))
-        self.train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+        self.train_step = tf.train.AdamOptimizer(1e-4).minimize(self.cross_entropy)
 
         init = tf.global_variables_initializer()
         self.sess = tf.Session();

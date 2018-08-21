@@ -24,9 +24,8 @@ def get_train_data():
     lists = os.listdir(path)  # 列出目录的下所有文件和文件夹保存到lists
     for i in lists:
         im = Image.open(path + i)
-        im = im.convert("L")  # 转成灰色模式
         data = im.getdata()
-        data = np.array(data) / 225  # 转换成矩阵
+        data = np.array(data) / 255.0  # 转换成矩阵
 
         yy.append(i.split("_")[0])
         xx.append(np.array(data))
@@ -42,7 +41,7 @@ def get_test_data():
         im = Image.open(path + i)
         im = im.convert("L")  # 转成灰色模式
         data = im.getdata()
-        data = np.array(data) / 225  # 转换成矩阵
+        data = np.array(data) / 225.0  # 转换成矩阵
 
         yy.append(i.split("_")[0])
         xx.append(np.array(data))
@@ -62,5 +61,5 @@ if __name__ == '__main__':
         X_train, X_test, y_train, y_test = train_test_split(xx, yy, test_size=.9)
 
         b.sess.run(b.train_step, feed_dict={b.input_x: X_train, b.input_y: y_train, b.keep_prob: 0.5})
-        print(b.compute_accuracy(
-            X_test, y_test))
+        loss = b.sess.run(b.cross_entropy, feed_dict={b.input_x: X_train, b.input_y: y_train, b.keep_prob: 0.5})
+        print(loss, b.compute_accuracy(X_test, y_test))
