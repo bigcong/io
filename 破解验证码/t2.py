@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 def get_train_data():
     xx = []
     yy = []
-    path = 'data/'
+    path = '/Users/cc/cc/io/破解验证码/data/'
     lists = os.listdir(path)  # 列出目录的下所有文件和文件夹保存到lists
     for i in lists:
         im = Image.open(path + i)
