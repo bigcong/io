@@ -26,9 +26,10 @@ def get_train_data():
         im = Image.open(path + i)
         data = im.getdata()
         data = np.array(data) / 255.0  # 转换成矩阵
+        if (len(i.split("_")) == 2):
+            yy.append(i.split("_")[0])
+            xx.append(np.array(data))
 
-        yy.append(i.split("_")[0])
-        xx.append(np.array(data))
     return np.array(xx), yy
 
 
@@ -45,6 +46,7 @@ def get_test_data():
 
         yy.append(i.split("_")[0])
         xx.append(np.array(data))
+
     yy = LabelBinarizer().fit_transform(yy)
     return np.array(xx), yy
 
