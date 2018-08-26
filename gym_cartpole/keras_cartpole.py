@@ -76,22 +76,30 @@ def get():
             r2 = (env.theta_threshold_radians - abs(theta)) / env.theta_threshold_radians - 0.5
             reward = r1 + r2
             ransition = np.hstack((observation, [action, reward], observation_))
+            print()
 
 
 if __name__ == '__main__':
-    X_train, X_test, y_train, y_test, lb = get_data()
-    model = tf.keras.models.load_model("logs/cp.h5")
-    for i in range(100):
-        if i % 50 == 0:
-            train_and_save()
 
-        get = GET()
-        get.getImage()
-        get.spit()
-        p_varcode = "".join(lb.inverse_transform(np.argmax(model.predict(get.dms), 1)))
-        if (get.viefiy(get.codeUUID, p_varcode)):
-            get.im.save("/Users/cc/cc/io/破解验证码/right/" + p_varcode + ".png")
-        else:
-            get.im.save("/Users/cc/cc/io/破解验证码/wrong/" + p_varcode + ".png")
+    env = CartPoleEnv()
+    for i_episode in range(20):
+        observation = env.reset()
+        for t in range(100):
+            env.render()
+            action = env.action_space.sample()
+            observation_, reward, done, info = env.step(action)
+            x, x_dot, theta, theta_dot = observation_
+            r1 = (env.x_threshold - abs(x)) / env.x_threshold - 0.8
+            r2 = (env.theta_threshold_radians - abs(theta)) / env.theta_threshold_radians - 0.5
+            reward = r1 + r2
+            print(reward)
+            ransition = np.hstack((observation, [action, reward], observation_))
+            print(ransition)
+
+
+            if done:
+                print("Episode finished after {} timesteps".format(t + 1))
+                break
+    env.close()
 
 # Create checkpoint callback

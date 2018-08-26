@@ -21,7 +21,7 @@ def go2():
     env = CartPoleEnv()
     episode_step_counter = 0
     for i_episode in range(10000):
-        x, x_dot, theta, theta_dot = env.reset()
+        action = env.reset()
 
         step_counter = 0;
         while True:
@@ -34,6 +34,7 @@ def go2():
             r1 = (env.x_threshold - abs(x)) / env.x_threshold - 0.8
             r2 = (env.theta_threshold_radians - abs(theta)) / env.theta_threshold_radians - 0.5
             reward = r1 + r2
+            print(reward)
 
             step_counter = step_counter + 1
 
@@ -48,4 +49,23 @@ def go2():
 
 
 if __name__ == '__main__':
-    go2()
+    batch_index = np.arange(32, dtype=np.int32)
+    print(batch_index)
+
+
+
+
+
+    batch_memory = np.random.uniform(0, 2, 32 * 10).reshape(32, 10)
+    reward = batch_memory[:, 5]
+    print(reward)
+    eval_act_index = batch_memory[:, 4].astype(int)
+    print(eval_act_index)
+
+
+
+
+    q_target = np.random.uniform(0, 2, 64).reshape(32, 2)
+
+    q_target[batch_index, eval_act_index] = 1
+    print(q_target)
