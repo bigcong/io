@@ -154,13 +154,10 @@ class DeepQNetwork:
         q_target = q_eval.copy()
 
         batch_index = np.arange(self.batch_size, dtype=np.int32)
-        print("batch_index", batch_index)
         eval_act_index = batch_memory[:, self.n_features].astype(int)
-        print("eval_act_index", eval_act_index)
         reward = batch_memory[:, self.n_features + 1]
 
         q_target[batch_index, eval_act_index] = reward + self.gamma * np.max(q_next, axis=1)
-        print("q_target", q_target)
         """
         For example in this batch I have 2 samples and 3 actions:
         q_eval =

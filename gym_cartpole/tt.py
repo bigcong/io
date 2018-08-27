@@ -43,8 +43,8 @@ class DeepQNetwork:
         self.memory_size = 500
         self.learn_step_counter = 0
         self.replace_target_iter = 300
+        self.epsilon = 0.9
         self.cost_his = []
-
 
     def _build_net(self):
         # ------------------ 建立评估网络 ------------------
@@ -66,14 +66,20 @@ class DeepQNetwork:
         self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval))
         self._train_op = tf.train.RMSPropOptimizer(0.001).minimize(self.loss)
 
+
+
+
+
         # ------------------ 建立目标网络------------------
+        target_net_params = ['target_net_params', tf.GraphKeys.GLOBAL_VARIABLES]
+
         self.s_ = tf.placeholder(tf.float32, [None, 4], name='s_')  # input
-        w3 = tf.get_variable('w3', [4, 10], initializer=w_initializer, collections=c_names)
-        b3 = tf.get_variable('b3', [1, 10], initializer=b_initializer, collections=c_names)
+        w3 = tf.get_variable('w3', [4, 10], initializer=w_initializer, collections=target_net_params)
+        b3 = tf.get_variable('b3', [1, 10], initializer=b_initializer, collections=target_net_params)
         l3 = tf.nn.relu(tf.matmul(self.s_, w3) + b3)
 
-        w4 = tf.get_variable('w4', [10, 2], initializer=w_initializer, collections=c_names)
-        b4 = tf.get_variable('b4', [1, 2], initializer=b_initializer, collections=c_names)
+        w4 = tf.get_variable('w4', [10, 2], initializer=w_initializer, collections=target_net_params)
+        b4 = tf.get_variable('b4', [1, 2], initializer=b_initializer, collections=target_net_params)
         self.q_next = tf.matmul(l3, w4) + b4
 
     def store_transition(self, s, a, r, s_):
@@ -120,36 +126,13 @@ class DeepQNetwork:
         batch_index = np.arange(32, dtype=np.int32)
         eval_act_index = batch_memory[:, 4].astype(int)
         reward = batch_memory[:, 5]
-        q_target[batch_index, eval_act_index] = reward + 0.9 * np.max(q_next, axis=1)
+        q_target[batch_index, eval_act_index] = reward + 0.9 * np.max(q_next, axis=1)  # 实际得到的值
         _, self.cost = self.sess.run([self._train_op, self.loss],
                                      feed_dict={self.s: batch_memory[:, :4],
                                                 self.q_target: q_target})
+        print(self.cost)
         self.cost_his.append(self.cost)  # 记录 cost 误差
 
         # 逐渐增加 epsilon, 降低行为的随机性
-        # self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
+        self.epsilon = self.epsilon + 0.0001 if self.epsilon > 1.0 else 1.0
         self.learn_step_counter += 1
-
-
-if __name__ == '__main__':
-    env = CartPoleEnv()
-    observation = env.reset().reshape(1, 4)
-
-    observation = np.arange(100).reshape(1, 25, 4)
-    print(observation)
-
-    self = DeepQNetwork()
-    q_next, q_eval = self.sess.run(
-        [self.q_next, self.q_eval],
-        feed_dict={
-            self.s_: observation,  # 取出数组的后4个值 [[[0 1 2 3 4]]] ->[[1 2 3 4]]
-            self.s: observation,  # # 取出数组的前4个值 [[[0 1 2 3 4]]] ->[[0 1 2 3]]
-        })
-    q_target = q_eval.copy()
-    batch_index = np.arange(32, dtype=np.int32)
-    print(batch_index)
-    eval_act_index = observation[:, 4].astype(int)
-    print(eval_act_index)
-
-    q_target[batch_index, eval_act_index] = 1
-    print(q_target)

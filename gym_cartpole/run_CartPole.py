@@ -44,15 +44,12 @@ for i_episode in range(100):
         reward = r1 + r2
 
         RL.store_transition(observation, action, reward, observation_)
-
         ep_r += reward
         if total_steps > 1000:
             RL.learn()
 
         if done:
-            print('episode: ', i_episode,
-                  'ep_r: ', round(ep_r, 2),
-                  ' epsilon: ', round(RL.epsilon, 2))
+
             break
 
         observation = observation_
