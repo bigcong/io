@@ -81,7 +81,7 @@ def get_data(memory=None, model=None):
     reward = memory[:, 5]
     actions = memory[:, 4].astype(int)
     index, _ = q_target.shape
-    q_target[np.arange(index), actions] = reward + 0.1 * np.max(q_next, axis=1)
+    q_target[np.arange(index), actions] = reward + 0.9 * np.max(q_next, axis=1)
     return s, q_target
 
 
@@ -91,6 +91,7 @@ def go():
     total_steps = 0
     memory = []
     model = create_model()
+
     epsilon = 0.9
     memory_counter = 1000
     for i_episode in range(1000):
