@@ -50,8 +50,14 @@ class DeepQNetwork:
         t_params = tf.get_collection('target_net_params')
         e_params = tf.get_collection('eval_net_params')
         self.replace_target_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
+        self.saver = tf.train.Saver()
 
         self.sess = tf.Session()
+
+        try:
+            self.saver.restore(self.sess, "logs/save_net.ckpt")
+        except:
+            pass
 
         if output_graph:
             # $ tensorboard --logdir=logs
@@ -183,15 +189,19 @@ class DeepQNetwork:
         _, self.cost = self.sess.run([self._train_op, self.loss],
                                      feed_dict={self.s: batch_memory[:, :self.n_features],
                                                 self.q_target: q_target})
+        print(self.cost)
         self.cost_his.append(self.cost)
 
         # increasing epsilon
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.learn_step_counter += 1
+        if self.learn_step_counter % 100 == 0:
+            self.saver.save(self.sess, "logs/save_net.ckpt")
 
-    def plot_cost(self):
-        import matplotlib.pyplot as plt
-        plt.plot(np.arange(len(self.cost_his)), self.cost_his)
-        plt.ylabel('Cost')
-        plt.xlabel('training steps')
-        plt.show()
+
+def plot_cost(self):
+    import matplotlib.pyplot as plt
+    plt.plot(np.arange(len(self.cost_his)), self.cost_his)
+    plt.ylabel('Cost')
+    plt.xlabel('training steps')
+    plt.show()

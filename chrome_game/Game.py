@@ -1,8 +1,12 @@
+import numpy as np
+
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 
-game_url = "file:///Users/cc/cc/t-rex-runner/index.html"
+from gym_cartpole.RL_brain import DeepQNetwork
+
+game_url = "file:///Users/cc/cc/io/chrome_game/index.html"
 chrome_driver_path = "/Users/cc/cc/DinoRunTutorial/chromedriver"
 loss_file_path = "./objects/loss_df.csv"
 actions_file_path = "./objects/actions_df.csv"
@@ -16,7 +20,7 @@ class Game:
         chrome_options = Options()
         chrome_options.add_argument("disable-infobars")
         chrome_options.add_argument("--mute-audio")
-        self._driver = webdriver.Chrome(executable_path=chrome_driver_path, chrome_options=chrome_options)
+        self._driver = webdriver.Chrome(chrome_options=chrome_options)
         self._driver.set_window_position(x=-10, y=0)
         self._driver.get(game_url)
         self._driver.execute_script("Runner.config.ACCELERATION=0")
@@ -45,11 +49,39 @@ class Game:
         except:
             return 0
 
-    def get_state(self):
-        s = self._driver.execute_script("return Runner.instance_.horizon.obstacles[0]")
-        s_ = self._driver.execute_script("return Runner.instance_.tRex")
+    # 跳跃次数
+    def jumpCount(self):
+        return self._driver.execute_script("return Runner.instance_.tRex.jumpCount")
 
-        return s, s_
+    def get_state(self):
+        obstacle = self._driver.execute_script("return Runner.instance_.horizon.obstacles[0]")
+        tRex = self._driver.execute_script("return Runner.instance_.tRex")
+
+        if obstacle is None:
+            s = np.array([])
+        else:
+            # if (tRexBox.x < obstacleBoxX + obstacleBox.width & &
+            #         tRexBox.x + tRexBox.width > obstacleBoxX & &
+            #         tRexBox.y < obstacleBox.y + obstacleBox.height & &
+            #         tRexBox.height + tRexBox.y > obstacleBox.y) {
+            # crashed = true;
+            # }
+            tRexX, tRexY, tRexW, tRexH = tRex['xPos'] + 1, tRex['yPos'] + 1, tRex['config']['WIDTH'] - 2, \
+                                         tRex['config'][
+                                             'HEIGHT'] - 2
+
+            obstacleX, obstacleY, obstacleW, obstacleH = obstacle['xPos'] + 1, obstacle['yPos'] + 1, \
+                                                         obstacle['typeConfig'][
+                                                             'width'] * obstacle['size'] - 2, obstacle['typeConfig'][
+                                                             'height'] - 2
+
+            s = (obstacleX + obstacleW) - tRexX, obstacleX - (tRexX + tRexW), (
+                    obstacleY + obstacleH) - tRexY, tRexH + tRexY - obstacleY, self.get_score() // 100
+
+        return np.array(s)
+
+    def get_jumping(self):
+        return self._driver.execute_script("return Runner.instance_.tRex.jumping")
 
     def pause(self):
         return self._driver.execute_script("return Runner.instance_.stop()")
@@ -61,17 +93,51 @@ class Game:
         self._driver.close()
 
 
+RL = DeepQNetwork(n_actions=2,
+                  n_features=5,
+                  learning_rate=0.01, e_greedy=0.99,
+                  replace_target_iter=100, memory_size=2000,
+                  e_greedy_increment=0.001, )
+
+total_steps = 0
 if __name__ == '__main__':
-    g = Game()
-    for i in range(200):
-        g.restart()
+    env = Game()
+    for i in range(10000):
+        env.restart()
+        env.press_up()
+        state = env.get_state()
+        _action = 0
+
         while True:
-            s,s_=g.get_state()
-            print(s)
-            if g.get_crashed():
+            if len(state) == 0 or state[0] > 150:
+                state = env.get_state()
+                continue
+
+            if not env.get_crashed():  # game over
+                if env.get_jumping():
+                    continue
+
+            action = RL.choose_action(state)
+
+            if action == 1:
+                env.press_up()
+
+            if env.get_crashed():  # game over
+                state_ = env.get_state()
+                print(state_)
+
+                RL.store_transition(state, action, 0, state_)
+                total_steps = total_steps + 1
+
                 break;
             else:
-                g.press_up()
-            print(g.get_score())
+                state_ = env.get_state()
+                reward = 1 / (1 + action)
+                RL.store_transition(state, action, reward, state_)
+                state = state_
+                total_steps = total_steps + 1
 
-g.end()
+            if total_steps > 100:
+                RL.learn()
+
+env._driver.close()
