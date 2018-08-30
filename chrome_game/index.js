@@ -2648,7 +2648,7 @@
             var obstacleType = Obstacle.types[obstacleTypeIndex];
 
             // Check for multiples of the same type of obstacle.
-            // Also check obstacle is available at current speed.
+                // Also check obstacle is available at current speed.
             if (this.duplicateObstacleCheck(obstacleType.type) ||
                 currentSpeed < obstacleType.minSpeed) {
                 this.addNewObstacle(currentSpeed);
@@ -2662,7 +2662,7 @@
                 this.obstacleHistory.unshift(obstacleType.type);
 
                 if (this.obstacleHistory.length > 1) {
-                    this.obstacleHistory.splice(Runner.config.MAX_OBSTACLE_DUPLICATION);
+                    this.obstacleHistory. (Runner.config.MAX_OBSTACLE_DUPLICATION);
                 }
             }
         },

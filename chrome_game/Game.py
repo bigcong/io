@@ -6,7 +6,7 @@ from selenium.webdriver.common.keys import Keys
 
 from gym_cartpole.RL_brain import DeepQNetwork
 
-game_url = "file:///Users/cc/cc/io/chrome_game/index.html"
+game_url = "http://www.baidu.com"
 chrome_driver_path = "/Users/cc/cc/DinoRunTutorial/chromedriver"
 loss_file_path = "./objects/loss_df.csv"
 actions_file_path = "./objects/actions_df.csv"
@@ -23,7 +23,6 @@ class Game:
         self._driver = webdriver.Chrome(chrome_options=chrome_options)
         self._driver.set_window_position(x=-10, y=0)
         self._driver.get(game_url)
-        self._driver.execute_script("Runner.config.ACCELERATION=0")
         self._driver.execute_script(init_script)
 
     def get_crashed(self):
@@ -95,21 +94,21 @@ class Game:
 
 RL = DeepQNetwork(n_actions=2,
                   n_features=5,
-                  learning_rate=0.01, e_greedy=0.99,
+                  learning_rate=0.01, e_greedy=0.95,
                   replace_target_iter=100, memory_size=2000,
-                  e_greedy_increment=0.001, )
+                  e_greedy_increment=0.0001, )
 
 total_steps = 0
 if __name__ == '__main__':
     env = Game()
-    for i in range(10000):
+    for i in range(1000):
         env.restart()
         env.press_up()
         state = env.get_state()
-        _action = 0
+        reward_conter = 0
 
         while True:
-            if len(state) == 0 or state[0] > 150:
+            if len(state) == 0 or env.get_state()[0] > 150 + env.get_state()[-1:][0] * 10:
                 state = env.get_state()
                 continue
 
@@ -124,18 +123,22 @@ if __name__ == '__main__':
 
             if env.get_crashed():  # game over
                 state_ = env.get_state()
-                print(state_)
+                RL.store_transition(state, action, -1, state_)
 
-                RL.store_transition(state, action, 0, state_)
                 total_steps = total_steps + 1
+                print("reward_conter", reward_conter, "total_steps", total_steps, "epsilon", RL.epsilon)
 
                 break;
             else:
                 state_ = env.get_state()
-                reward = 1 / (1 + action)
+                reward = 0
+                if action == 1:
+                    reward = 1 / np.sqrt(np.sum(np.square(state - state_)))
+
                 RL.store_transition(state, action, reward, state_)
                 state = state_
                 total_steps = total_steps + 1
+                reward_conter += reward
 
             if total_steps > 100:
                 RL.learn()

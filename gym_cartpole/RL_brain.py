@@ -195,7 +195,7 @@ class DeepQNetwork:
         # increasing epsilon
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.learn_step_counter += 1
-        if self.learn_step_counter % 100 == 0:
+        if self.learn_step_counter % 20 == 0:
             self.saver.save(self.sess, "logs/save_net.ckpt")
 
 
